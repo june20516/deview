@@ -1,0 +1,107 @@
+"""ChromaDB 벡터 데이터베이스 래퍼."""
+from __future__ import annotations
+from pathlib import Path
+import chromadb
+
+_COLLECTION_NAME = "deview_contexts"
+
+
+class ChromaStore:
+    def __init__(self, persist_dir: str | None = None) -> None:
+        if persist_dir is None:
+            persist_dir = str(Path.home() / ".deview" / "data" / "chroma")
+        Path(persist_dir).mkdir(parents=True, exist_ok=True)
+        self._client = chromadb.PersistentClient(path=persist_dir)
+        self._collection = self._client.get_or_create_collection(
+            name=_COLLECTION_NAME,
+            metadata={"hnsw:space": "cosine"},
+        )
+
+    def add(
+        self,
+        ids: list[str],
+        embeddings: list[list[float]],
+        contents: list[str],
+        metadatas: list[dict],
+    ) -> None:
+        """청크를 저장한다."""
+        self._collection.add(
+            ids=ids,
+            embeddings=embeddings,
+            documents=contents,
+            metadatas=metadatas,
+        )
+
+    def search(
+        self,
+        query_embedding: list[float],
+        scope: str | None = None,
+        top_k: int = 5,
+        file_path: str | None = None,
+    ) -> list[dict]:
+        """scope 내에서 유사도 검색을 수행한다. scope가 None이면 전체 통합 검색."""
+        where_filter: dict | None = {"scope": scope} if scope else None
+
+        try:
+            query_kwargs: dict = {
+                "query_embeddings": [query_embedding],
+                "n_results": top_k,
+            }
+            if where_filter:
+                query_kwargs["where"] = where_filter
+            results = self._collection.query(**query_kwargs)
+        except Exception:
+            return []
+
+        if not results["ids"] or not results["ids"][0]:
+            return []
+
+        items = []
+        for i, doc_id in enumerate(results["ids"][0]):
+            item = {
+                "id": doc_id,
+                "content": results["documents"][0][i] if results["documents"] else "",
+                "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
+                "score": 1.0 - (results["distances"][0][i] if results["distances"] else 0.0),
+            }
+            items.append(item)
+
+        if file_path:
+            items.sort(
+                key=lambda x: (
+                    file_path not in x["metadata"].get("file_paths", ""),
+                    -x["score"],
+                )
+            )
+
+        return items
+
+    def count_by_source(self, scope: str) -> dict[str, int]:
+        """scope 내 소스별 청크 수를 반환한다."""
+        counts: dict[str, int] = {}
+        for source in ("git", "markdown", "manual", "comment"):
+            try:
+                result = self._collection.get(
+                    where={"$and": [{"scope": scope}, {"source": source}]}
+                )
+                count = len(result["ids"]) if result["ids"] else 0
+            except Exception:
+                count = 0
+            if count > 0:
+                counts[source] = count
+        return counts
+
+    def get_last_indexed(self, scope: str) -> str | None:
+        """scope의 마지막 인덱싱 시각을 반환한다."""
+        try:
+            result = self._collection.get(where={"scope": scope})
+            if not result["metadatas"]:
+                return None
+            timestamps = [
+                m.get("timestamp", "")
+                for m in result["metadatas"]
+                if m.get("timestamp")
+            ]
+            return max(timestamps) if timestamps else None
+        except Exception:
+            return None
