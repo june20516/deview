@@ -1,6 +1,8 @@
 """deview_search MCP 도구 핸들러."""
 from __future__ import annotations
 
+import json
+
 from deview.embedding.base import EmbeddingProvider
 from deview.storage.chroma import ChromaStore
 
@@ -15,8 +17,12 @@ async def handle_search(
     embedding: EmbeddingProvider | None = None,
 ) -> dict:
     """맥락을 검색하여 결과를 반환한다."""
-    assert store is not None
-    assert embedding is not None
+    if store is None:
+        raise ValueError("store가 초기화되지 않았습니다")
+    if embedding is None:
+        raise ValueError("embedding provider가 초기화되지 않았습니다")
+    if not query or not query.strip():
+        return {"results": []}
 
     query_vector = embedding.embed([query])[0]
     results = store.search(
@@ -31,9 +37,7 @@ async def handle_search(
             {
                 "content": r["content"],
                 "source": r["metadata"].get("source", ""),
-                "file_paths": r["metadata"].get("file_paths", "").split(",")
-                if r["metadata"].get("file_paths")
-                else [],
+                "file_paths": json.loads(r["metadata"].get("file_paths", "[]")),
                 "author": r["metadata"].get("author", ""),
                 "timestamp": r["metadata"].get("timestamp", ""),
                 "score": r["score"],

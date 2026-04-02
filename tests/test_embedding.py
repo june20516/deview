@@ -1,3 +1,5 @@
+import pytest
+
 from deview.embedding.base import EmbeddingProvider
 from deview.embedding import create_provider
 from deview.config import ProviderConfig
@@ -29,8 +31,18 @@ def test_create_provider_openai():
     assert provider.dimension() == 1536
 
 
+def test_create_provider_mistral():
+    """mistral provider를 생성할 수 있다 (mistralai 설치 시)."""
+    pytest.importorskip("mistralai")
+    provider = create_provider("mistral", ProviderConfig(
+        model="mistral-embed",
+        api_key="test-key",
+    ))
+    assert isinstance(provider, EmbeddingProvider)
+    assert provider.dimension() == 1024
+
+
 def test_create_provider_unknown():
     """알 수 없는 provider는 ValueError를 발생시킨다."""
-    import pytest
     with pytest.raises(ValueError, match="Unknown embedding provider"):
         create_provider("unknown", ProviderConfig())

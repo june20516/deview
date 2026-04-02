@@ -1,7 +1,12 @@
 """ChromaDB 벡터 데이터베이스 래퍼."""
 from __future__ import annotations
+
+import logging
 from pathlib import Path
+
 import chromadb
+
+logger = logging.getLogger(__name__)
 
 _COLLECTION_NAME = "deview_contexts"
 
@@ -25,12 +30,13 @@ class ChromaStore:
         metadatas: list[dict],
     ) -> None:
         """청크를 저장한다."""
-        self._collection.add(
+        self._collection.upsert(
             ids=ids,
             embeddings=embeddings,
             documents=contents,
             metadatas=metadatas,
         )
+        logger.debug("%d개 청크 저장 완료", len(ids))
 
     def search(
         self,
@@ -51,6 +57,7 @@ class ChromaStore:
                 query_kwargs["where"] = where_filter
             results = self._collection.query(**query_kwargs)
         except Exception:
+            logger.exception("ChromaDB 검색 중 오류 발생")
             return []
 
         if not results["ids"] or not results["ids"][0]:
@@ -86,6 +93,7 @@ class ChromaStore:
                 )
                 count = len(result["ids"]) if result["ids"] else 0
             except Exception:
+                logger.exception("소스별 카운트 조회 중 오류: source=%s", source)
                 count = 0
             if count > 0:
                 counts[source] = count
@@ -104,4 +112,5 @@ class ChromaStore:
             ]
             return max(timestamps) if timestamps else None
         except Exception:
+            logger.exception("마지막 인덱싱 시각 조회 중 오류")
             return None

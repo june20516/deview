@@ -10,7 +10,8 @@ async def handle_status(
     embedding_provider: str = "",
 ) -> dict:
     """현재 Deview 상태를 반환한다."""
-    assert store is not None
+    if store is None:
+        raise ValueError("store가 초기화되지 않았습니다")
 
     sources = store.count_by_source(scope)
     total = sum(sources.values())

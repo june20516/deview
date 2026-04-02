@@ -1,9 +1,10 @@
 """Markdown 파일 파싱 및 청크 생성."""
 from __future__ import annotations
+import json
 import re
 from datetime import datetime
 from pathlib import Path
-from deview.ingestion.git import Chunk
+from deview.ingestion import Chunk
 
 _HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
 
@@ -44,7 +45,7 @@ def parse_markdown_files(path: Path, scope: str = "") -> list[Chunk]:
                 metadata={
                     "scope": scope,
                     "source": "markdown",
-                    "file_paths": str(md_file),
+                    "file_paths": json.dumps([str(md_file)]),
                     "section": heading,
                     "timestamp": mtime,
                 },

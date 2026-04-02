@@ -16,6 +16,7 @@ def create_provider(name: str, config: ProviderConfig) -> EmbeddingProvider:
         from deview.embedding.local import LocalEmbedding
         return LocalEmbedding(model=config.model)
     elif name == "mistral":
-        raise NotImplementedError("Mistral provider는 Phase 1에서 미구현")
+        from deview.embedding.mistral import MistralEmbedding
+        return MistralEmbedding(model=config.model, api_key=config.api_key)
     else:
         raise ValueError(f"Unknown embedding provider: {name}")

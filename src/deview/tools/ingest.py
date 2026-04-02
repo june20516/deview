@@ -20,8 +20,10 @@ async def handle_ingest(
     branch: str = "main",
 ) -> dict:
     """Git 히스토리 또는 Markdown 문서를 인덱싱한다."""
-    assert store is not None
-    assert embedding is not None
+    if store is None:
+        raise ValueError("store가 초기화되지 않았습니다")
+    if embedding is None:
+        raise ValueError("embedding provider가 초기화되지 않았습니다")
 
     target = Path(path)
     resolved_type = source_type

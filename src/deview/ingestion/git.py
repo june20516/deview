@@ -1,14 +1,16 @@
 """Git 히스토리 파싱 및 청크 생성."""
 from __future__ import annotations
+
+import json
+import logging
 import re
-from dataclasses import dataclass, field
 from pathlib import Path
+
 import git
 
-@dataclass
-class Chunk:
-    content: str
-    metadata: dict[str, str] = field(default_factory=dict)
+from deview.ingestion import Chunk
+
+logger = logging.getLogger(__name__)
 
 _COMMENT_PATTERNS = [
     re.compile(r"^\+\s*(?:#|//|/\*|\*|<!--)\s*(.+)", re.MULTILINE),
@@ -63,8 +65,12 @@ def parse_git_history(
         repo.commit(ref)
     except git.BadName:
         ref = repo.active_branch.name
+        logger.info("브랜치 '%s'를 찾을 수 없어 '%s'로 폴백", branch, ref)
 
-    commits = list(repo.iter_commits(ref, max_count=max_commits or 999999))
+    iter_kwargs: dict = {"rev": ref}
+    if max_commits is not None:
+        iter_kwargs["max_count"] = max_commits
+    commits = list(repo.iter_commits(**iter_kwargs))
 
     for commit in commits:
         author = commit.author.name or "unknown"
@@ -90,7 +96,7 @@ def parse_git_history(
                 "scope": scope,
                 "source": "git",
                 "author": author,
-                "file_paths": ",".join(file_paths),
+                "file_paths": json.dumps(file_paths),
                 "commit_hash": commit.hexsha[:7],
                 "timestamp": timestamp,
             },
@@ -110,10 +116,11 @@ def parse_git_history(
                         "scope": scope,
                         "source": "comment",
                         "author": author,
-                        "file_paths": comment_file,
+                        "file_paths": json.dumps([comment_file]),
                         "commit_hash": commit.hexsha[:7],
                         "timestamp": timestamp,
                     },
                 ))
 
+    logger.info("Git 히스토리 파싱 완료: %d개 청크 생성", len(chunks))
     return chunks

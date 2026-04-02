@@ -18,7 +18,7 @@ def test_add_and_search(store: ChromaStore):
             "scope": "team/project",
             "source": "git",
             "author": "kim",
-            "file_paths": "src/Button.tsx",
+            "file_paths": "[\"src/Button.tsx\"]",
             "timestamp": "2025-11-03",
         }],
     )
@@ -40,8 +40,8 @@ def test_search_with_file_path_filter(store: ChromaStore):
         embeddings=[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
         contents=["Button.tsx 관련 변경", "Header.tsx 관련 변경"],
         metadatas=[
-            {"scope": "proj", "source": "git", "file_paths": "src/Button.tsx", "timestamp": "2025-01-01"},
-            {"scope": "proj", "source": "git", "file_paths": "src/Header.tsx", "timestamp": "2025-01-01"},
+            {"scope": "proj", "source": "git", "file_paths": "[\"src/Button.tsx\"]", "timestamp": "2025-01-01"},
+            {"scope": "proj", "source": "git", "file_paths": "[\"src/Header.tsx\"]", "timestamp": "2025-01-01"},
         ],
     )
 

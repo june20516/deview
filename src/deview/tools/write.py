@@ -14,8 +14,12 @@ async def handle_write(
     embedding: EmbeddingProvider | None = None,
 ) -> dict:
     """수동 맥락을 저장한다."""
-    assert store is not None
-    assert embedding is not None
+    if store is None:
+        raise ValueError("store가 초기화되지 않았습니다")
+    if embedding is None:
+        raise ValueError("embedding provider가 초기화되지 않았습니다")
+    if not content or not content.strip():
+        raise ValueError("저장할 내용이 비어있습니다")
 
     chunk = create_manual_chunk(content, scope, file_paths)
     chunk_id = generate_chunk_id()
