@@ -1,0 +1,32 @@
+[project]
+name = "deview"
+version = "0.1.0"
+description = "Digital Psychometry for Developers — Context-aware developer assistant"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]",
+    "chromadb",
+    "voyageai",
+    "openai",
+    "gitpython",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+local = [
+    "sentence-transformers",
+    "torch",
+]
+mistral = [
+    "mistralai",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
