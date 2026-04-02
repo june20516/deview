@@ -95,16 +95,18 @@ async def deview_write(
 
 @mcp.tool()
 async def deview_ingest(
-    path: str,
+    path: str = "",
     scope: str = "",
     source_type: str = "auto",
     max_commits: int | None = None,
 ) -> dict:
     """프로젝트의 Git 히스토리 또는 Markdown 문서를 인덱싱합니다.
-    최초 사용 시 또는 새로운 데이터를 수동으로 추가할 때 호출하세요."""
+    최초 사용 시 또는 새로운 데이터를 수동으로 추가할 때 호출하세요.
+    path를 생략하면 현재 프로젝트를 인덱싱합니다."""
     store, embedding, default_scope, _, branch = _ensure_initialized()
+    resolved_path = path or os.environ.get("DEVIEW_PROJECT_PATH", str(Path.cwd()))
     return await handle_ingest(
-        path=path,
+        path=resolved_path,
         scope=scope or default_scope,
         source_type=source_type,
         max_commits=max_commits,
