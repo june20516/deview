@@ -62,9 +62,11 @@ Deview는 LLM을 직접 호출하지 않습니다. 맥락의 **저장과 검색*
 ### 4.1. 인터페이스 레이어 (Interface Layer)
 ```
 Deview (standalone 서버)
-  ├── MCP 인터페이스  → Claude Code, Cursor 등 LLM 클라이언트
-  ├── REST API       → CI/CD, 리뷰 자동화, 커스텀 도구
-  └── CLI            → 관리/디버깅용
+  ├── MCP 인터페이스 (기본)  → Claude Code, Cursor 등 LLM 클라이언트
+  │   ├── stdio            → 로컬 (Phase 1)
+  │   └── SSE/Streamable HTTP → 원격/팀 서버 (Phase 2+)
+  ├── REST API (보조)       → CI/CD, 리뷰 자동화, 커스텀 도구
+  └── CLI                  → 관리/디버깅용
 ```
 
 ### 4.2. Ingestion Layer (데이터 수집)
@@ -114,9 +116,9 @@ Deview (standalone 서버)
     - `deview_status`: 현재 Scope 정보, 인덱싱 상태 확인.
     - `deview_review` (Phase 4): PR diff를 분석하여 관련 맥락을 종합 반환.
 
-### 5.2. REST API
-- CI/CD 파이프라인, 리뷰 자동화 등 LLM 클라이언트 외의 환경에서 맥락에 접근.
-- 팀 단위 배포 시 중앙 맥락 서버로 활용.
+### 5.2. REST API (보조)
+- CI/CD 파이프라인, 리뷰 자동화, 스크립트 등 MCP를 사용할 수 없는 환경에서 맥락에 접근.
+- MCP가 기본 인터페이스이며, REST API는 보조 경로.
 
 ### 5.3. CLI (관리용)
 - `deview init <scope_name>`: 새로운 영역 생성 및 초기화.
@@ -135,7 +137,7 @@ Deview (standalone 서버)
 | **Embedding (기본)** | Voyage `voyage-3.5-lite` | 무료 200M 토큰, RAG 특화 |
 | **Embedding (로컬 대안)** | BGE-large-en-v1.5 | 무료, 오프라인, 상용 수준 품질 |
 | **Embedding (교체 가능)** | OpenAI, Mistral 등 | 설정으로 전환 가능한 추상화 구조 |
-| **서버** | MCP SDK + FastAPI | MCP 인터페이스 + REST API |
+| **서버** | MCP SDK (stdio + SSE/HTTP) + FastAPI | MCP 기본 + REST 보조 |
 
 > **참고:** LlamaIndex의 코어 프레임워크(파이프라인, 인덱스, 쿼리엔진)에는 의존하지 않습니다.
 > `llama-index-readers-confluence` 등 개별 데이터 로더 패키지만 선택적으로 사용하며,
@@ -152,7 +154,7 @@ Deview (standalone 서버)
 
 ## 8. 로드맵 (Roadmap)
 - **Phase 1 (mcp-ingest-query):** MCP 서버 기반의 기본 Ingest & Query 기능 구현 (ChromaDB + Voyage/BGE Embedding). Scope 자동 추론 (git remote URL/디렉토리명 기반). 임베딩 모델 교체 가능한 추상화 구조. 로컬 임베딩 모델 설치 가이드 포함.
-- **Phase 2 (git-hook-rest-api):** Git Hook 연동 (공용 브랜치 머지 시 자동 인덱싱) + REST API + Jira/Confluence 커넥터 (CLI 수동 동기화).
+- **Phase 2 (git-hook-rest-api):** Git Hook 연동 (공용 브랜치 머지 시 자동 인덱싱) + MCP 원격 전송(SSE/Streamable HTTP) + REST API(보조) + Jira/Confluence 커넥터 (CLI 수동 동기화).
 - **Phase 3 (team-deploy):** 팀 배포 지원 (Qdrant 전환, 인증/권한) + PR 머지 Webhook 기반 자동 인덱싱. (Jira/Confluence 자동 동기화는 추후 확장)
 - **Phase 4 (review-automation):** 리뷰 자동화 등 팀 협업 기능.
 - **Phase 5 (ide-extension):** IDE 익스텐션 개발 및 UI 통합 (VS Code 먼저, JetBrains 이후).

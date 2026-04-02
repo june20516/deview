@@ -19,7 +19,7 @@ services:
   deview:
     image: deview:latest
     ports:
-      - "8080:8080"     # REST API
+      - "8080:8080"     # MCP (SSE/Streamable HTTP) + REST API
     environment:
       - DEVIEW_DB_URL=qdrant:6333
     depends_on:
@@ -40,7 +40,12 @@ volumes:
 
 - Python 3.10+ slim 이미지 기반
 - `uv` 사용한 의존성 설치
-- MCP 서버 + REST API 서버 동시 실행
+- MCP 원격 서버(SSE/Streamable HTTP) + REST API 서버 실행
+
+### 2.3. 인터페이스 우선순위
+
+- **MCP (기본):** LLM 클라이언트(Claude Code, Cursor 등)는 원격 MCP로 팀 서버에 접속. 로컬/원격 동일한 인터페이스.
+- **REST API (보조):** CI/CD, webhook, 스크립트 등 MCP를 사용할 수 없는 환경용.
 
 ---
 

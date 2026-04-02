@@ -1,10 +1,11 @@
-# Phase 2: Git Hook + REST API + 외부 커넥터 — 상세 설계
+# Phase 2: Git Hook + 원격 MCP + REST API + 외부 커넥터 — 상세 설계
 
 ## 1. 목표
 
-Phase 1의 수동 인덱싱을 자동화하고, MCP 외의 환경에서도 Deview에 접근할 수 있게 한다.
+Phase 1의 수동 인덱싱을 자동화하고, 원격 환경에서도 Deview에 접근할 수 있게 한다.
 - 공용 브랜치 머지 시 자동 인덱싱 (post-merge hook)
-- REST API로 전체 기능 노출
+- MCP 원격 전송 지원 (SSE/Streamable HTTP) — 기본 인터페이스
+- REST API — MCP를 사용할 수 없는 환경(CI/CD, 스크립트)을 위한 보조 인터페이스
 - Jira/Confluence CLI 수동 동기화
 - `deview` CLI 도구 제공
 
@@ -36,15 +37,37 @@ deview hook uninstall  # hook 제거
 
 ---
 
-## 3. REST API
+## 3. MCP 원격 전송
 
-### 3.1. 설계 원칙
+### 3.1. 전송 방식
+
+Phase 1에서는 stdio 기반 로컬 MCP 서버로 동작하지만, Phase 2에서 **SSE(Server-Sent Events) 또는 Streamable HTTP** 전송을 추가하여 원격 접속을 지원한다.
+
+- 로컬/원격 모두 **동일한 MCP 인터페이스**로 통일
+- LLM 클라이언트(Claude Code, Cursor 등)는 MCP 설정에서 전송 방식(stdio → SSE/HTTP)만 변경하면 원격 서버에 연결 가능
+- Phase 3 팀 배포에서도 MCP가 기본 인터페이스
+
+### 3.2. 서버 구성
+
+```yaml
+# MCP 원격 서버 설정
+server:
+  transport: "sse"              # stdio | sse | streamable-http
+  host: "0.0.0.0"
+  port: 8080
+```
+
+---
+
+## 4. REST API (보조)
+
+### 4.1. 설계 원칙
 
 - MCP 도구와 동일한 기능을 HTTP로 노출
-- MCP를 사용할 수 없는 환경(CI/CD, 스크립트, 커스텀 도구)을 위한 대안 경로
+- MCP를 사용할 수 없는 환경(CI/CD, 스크립트, 커스텀 도구)을 위한 **보조 인터페이스**
 - 간단한 API 키 인증 (Phase 3에서 OAuth 확장 가능한 구조)
 
-### 3.2. 엔드포인트
+### 4.2. 엔드포인트
 
 | Method | Path | MCP 대응 | 설명 |
 |:---|:---|:---|:---|
@@ -54,7 +77,7 @@ deview hook uninstall  # hook 제거
 | GET | `/api/v1/status` | deview_status | 상태 조회 |
 | POST | `/api/v1/sync` | (신규) | 외부 소스 동기화 |
 
-### 3.3. 인증
+### 4.3. 인증
 
 ```
 Authorization: Bearer <api-key>
@@ -66,9 +89,9 @@ Authorization: Bearer <api-key>
 
 ---
 
-## 4. 외부 커넥터
+## 5. 외부 커넥터
 
-### 4.1. Jira 커넥터
+### 5.1. Jira 커넥터
 
 ```bash
 deview sync --source jira --project PROJ
@@ -79,7 +102,7 @@ deview sync --source jira --project PROJ
 - **파일 연결:** 커밋 메시지의 이슈 키(PROJ-123)로 역방향 연결
 - **인증:** Jira API 토큰 (`.deview.yaml`의 `integrations.jira` 섹션)
 
-### 4.2. Confluence 커넥터
+### 5.2. Confluence 커넥터
 
 ```bash
 deview sync --source confluence --space DEV
@@ -90,7 +113,7 @@ deview sync --source confluence --space DEV
 - **파일 연결:** 없음 — 벡터 유사도 검색에 의존
 - **인증:** Confluence API 토큰 (`.deview.yaml`의 `integrations.confluence` 섹션)
 
-### 4.3. 설정 확장
+### 5.3. 설정 확장
 
 ```yaml
 integrations:
@@ -106,9 +129,9 @@ integrations:
 
 ---
 
-## 5. CLI 도구
+## 6. CLI 도구
 
-### 5.1. 명령어 구조
+### 6.1. 명령어 구조
 
 ```bash
 deview status                           # 상태 조회
@@ -119,14 +142,14 @@ deview hook install|uninstall           # Git hook 관리
 deview server start|stop               # REST API 서버 관리
 ```
 
-### 5.2. 구현
+### 6.2. 구현
 
 - `click` 또는 `typer` 라이브러리 사용
 - `pyproject.toml`의 `[project.scripts]`로 `deview` 명령어 등록
 
 ---
 
-## 6. 추가 의존성
+## 7. 추가 의존성
 
 | 패키지 | 용도 |
 |:---|:---|
