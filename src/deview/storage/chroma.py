@@ -22,6 +22,8 @@ class ChromaStore:
             metadata={"hnsw:space": "cosine"},
         )
 
+    _BATCH_SIZE = 5000
+
     def add(
         self,
         ids: list[str],
@@ -29,13 +31,15 @@ class ChromaStore:
         contents: list[str],
         metadatas: list[dict],
     ) -> None:
-        """청크를 저장한다."""
-        self._collection.upsert(
-            ids=ids,
-            embeddings=embeddings,
-            documents=contents,
-            metadatas=metadatas,
-        )
+        """청크를 저장한다. ChromaDB 배치 제한을 초과하면 자동 분할."""
+        for i in range(0, len(ids), self._BATCH_SIZE):
+            end = i + self._BATCH_SIZE
+            self._collection.upsert(
+                ids=ids[i:end],
+                embeddings=embeddings[i:end],
+                documents=contents[i:end],
+                metadatas=metadatas[i:end],
+            )
         logger.debug("%d개 청크 저장 완료", len(ids))
 
     def search(
