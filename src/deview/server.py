@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -37,7 +38,7 @@ def _ensure_initialized() -> tuple[ChromaStore, EmbeddingProvider, str, str, str
     if _store is not None and _embedding is not None:
         return _store, _embedding, _scope, _provider_name, _config_branch
 
-    project_path = Path.cwd()
+    project_path = Path(os.environ.get("DEVIEW_PROJECT_PATH", Path.cwd()))
     config = load_config(project_path)
     _scope = resolve_scope(config.scope, project_path)
     _provider_name = config.embedding.provider
