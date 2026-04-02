@@ -125,3 +125,7 @@ async def deview_status(
         store=store,
         embedding_provider=provider_name,
     )
+
+
+if __name__ == "__main__":
+    mcp.run()

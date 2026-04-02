@@ -83,7 +83,7 @@ server:
 Authorization: Bearer <api-key>
 ```
 
-- API 키는 `.deview.yaml` 또는 환경변수 `DEVIEW_API_KEY`로 설정
+- API 키는 글로벌 설정(`~/.deview/config.yaml`) 또는 환경변수 `DEVIEW_API_KEY`로 설정
 - localhost 접근 시에도 인증 필요 (구조를 미리 잡아둠)
 - Phase 3에서 OAuth/SSO로 확장
 
@@ -100,7 +100,7 @@ deview sync --source jira --project PROJ
 - **수집 대상:** 상태가 Done/Closed인 이슈만
 - **청크 단위:** 이슈 1건 (제목 + 설명 + 댓글 요약)
 - **파일 연결:** 커밋 메시지의 이슈 키(PROJ-123)로 역방향 연결
-- **인증:** Jira API 토큰 (`.deview.yaml`의 `integrations.jira` 섹션)
+- **인증:** Jira API 토큰 (글로벌 설정 `~/.deview/config.yaml`의 `integrations.jira` 섹션)
 
 ### 5.2. Confluence 커넥터
 
@@ -111,9 +111,11 @@ deview sync --source confluence --space DEV
 - **수집 대상:** 발행된(Published) 문서
 - **청크 단위:** 문서 1건 = 청크 1건
 - **파일 연결:** 없음 — 벡터 유사도 검색에 의존
-- **인증:** Confluence API 토큰 (`.deview.yaml`의 `integrations.confluence` 섹션)
+- **인증:** Confluence API 토큰 (글로벌 설정 `~/.deview/config.yaml`의 `integrations.confluence` 섹션)
 
 ### 5.3. 설정 확장
+
+글로벌 설정(`~/.deview/config.yaml`)에 추가:
 
 ```yaml
 integrations:

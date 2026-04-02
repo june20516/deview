@@ -1,4 +1,4 @@
-"""설정 로드: .deview.yaml + 환경변수."""
+"""설정 로드: ~/.deview/config.yaml (글로벌) + .deview.yaml (프로젝트) + 환경변수."""
 
 from __future__ import annotations
 
@@ -42,6 +42,8 @@ class DeviewConfig:
 
 _ENV_VAR_PATTERN = re.compile(r"\$\{(\w+)\}")
 
+_GLOBAL_CONFIG_PATH = Path.home() / ".deview" / "config.yaml"
+
 
 def _substitute_env_vars(value: str) -> str:
     """${ENV_VAR} 패턴을 환경변수 값으로 치환한다."""
@@ -66,23 +68,43 @@ def _parse_providers(raw: dict) -> dict[str, ProviderConfig]:
     return providers
 
 
-def load_config(project_path: Path) -> DeviewConfig:
-    """프로젝트 경로에서 .deview.yaml을 읽어 DeviewConfig를 반환한다."""
-    yaml_path = project_path / ".deview.yaml"
-    if not yaml_path.exists():
-        return DeviewConfig()
+def _load_yaml(path: Path) -> dict:
+    """YAML 파일을 읽어 dict로 반환한다. 파일이 없으면 빈 dict."""
+    if not path.exists():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
 
-    with open(yaml_path, encoding="utf-8") as f:
-        raw = yaml.safe_load(f) or {}
 
-    embedding_raw = raw.get("embedding", {})
-    providers_raw = embedding_raw.get("providers", {})
+def load_config(
+    project_path: Path,
+    global_config_path: Path | None = None,
+) -> DeviewConfig:
+    """글로벌 설정과 프로젝트 설정을 병합하여 DeviewConfig를 반환한다.
+
+    - 글로벌 (~/.deview/config.yaml): 임베딩 provider, API 키 등 서버 설정
+    - 프로젝트 (.deview.yaml): scope, 인덱싱 대상 브랜치 등 프로젝트별 설정
+    - 프로젝트 설정이 글로벌과 겹치면 프로젝트 설정이 우선
+    """
+    global_path = global_config_path or _GLOBAL_CONFIG_PATH
+    global_raw = _load_yaml(global_path)
+    project_raw = _load_yaml(project_path / ".deview.yaml")
+
+    # 임베딩: 글로벌 기본, 프로젝트가 오버라이드
+    global_emb = global_raw.get("embedding", {})
+    project_emb = project_raw.get("embedding", {})
+
+    global_providers = _parse_providers(global_emb.get("providers", {}))
+    project_providers = _parse_providers(project_emb.get("providers", {}))
+    merged_providers = {**global_providers, **project_providers}
+
     embedding = EmbeddingConfig(
-        provider=embedding_raw.get("provider", "voyage"),
-        providers=_parse_providers(providers_raw),
+        provider=project_emb.get("provider") or global_emb.get("provider", "voyage"),
+        providers=merged_providers,
     )
 
-    git_raw = raw.get("ingestion", {}).get("git", {})
+    # 인제스션: 프로젝트 설정만
+    git_raw = project_raw.get("ingestion", {}).get("git", {})
     ingestion = IngestionConfig(
         git=GitIngestionConfig(
             target_branch=git_raw.get("target_branch", "main"),
@@ -91,7 +113,7 @@ def load_config(project_path: Path) -> DeviewConfig:
     )
 
     return DeviewConfig(
-        scope=raw.get("scope"),
+        scope=project_raw.get("scope"),
         embedding=embedding,
         ingestion=ingestion,
     )

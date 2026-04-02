@@ -61,26 +61,36 @@ deview/
 
 ## 3. 설정 구조
 
-### 3.1. `.deview.yaml`
+설정은 두 레벨로 분리된다:
+- **글로벌 설정 (`~/.deview/config.yaml`)**: 임베딩 provider, API 키 등 Deview 서버 설정
+- **프로젝트 설정 (`.deview.yaml`)**: scope, 인덱싱 대상 브랜치 등 프로젝트별 설정
+
+### 3.1. 글로벌 설정 (`~/.deview/config.yaml`)
+
+```yaml
+# Deview 서버 레벨 설정
+embedding:
+  provider: "voyage"                   # 사용할 provider (필수 아님, 기본 voyage)
+  providers:
+    voyage:
+      model: "voyage-3.5-lite"
+      api_key: "실제-api-키"           # 로컬 파일이므로 직접 입력 가능
+    openai:
+      model: "text-embedding-3-small"
+      api_key: "sk-..."
+    mistral:
+      model: "mistral-embed"
+      api_key: "..."
+    local:
+      model: "BGE-large-en-v1.5"      # API 키 불필요
+```
+
+### 3.2. 프로젝트 설정 (`.deview.yaml`)
 
 ```yaml
 # 선택사항 — 없으면 모두 기본값으로 동작
+# 사용할 프로젝트 루트에 위치. git에 커밋해도 안전.
 scope: "my-project"                    # 생략 시 git remote URL에서 자동 추론
-
-embedding:
-  provider: "voyage"                   # 사용할 provider 지정 (필수 아님, 기본 voyage)
-  providers:                           # 사용 가능한 provider 등록 (여러 개 가능)
-    voyage:
-      model: "voyage-3.5-lite"         # 생략 시 기본 모델
-      api_key: "${VOYAGE_API_KEY}"     # 환경변수 참조 또는 직접 입력
-    openai:
-      model: "text-embedding-3-small"
-      api_key: "${OPENAI_API_KEY}"
-    mistral:
-      model: "mistral-embed"
-      api_key: "${MISTRAL_API_KEY}"
-    local:
-      model: "BGE-large-en-v1.5"      # API 키 불필요
 
 ingestion:
   git:
@@ -88,22 +98,23 @@ ingestion:
     max_commits: null                  # null = 전체, 숫자 = 최근 N개 제한
 ```
 
-이렇게 하면 provider들을 미리 등록해두고 `embedding.provider` 값만 바꿔서 전환할 수 있습니다.
+프로젝트 설정에서 `embedding.provider`를 지정하면 글로벌 설정을 오버라이드할 수 있다 (예: 특정 프로젝트만 로컬 임베딩 사용).
 
-### 3.2. 환경변수
+### 3.3. 환경변수
 
-| 변수 | 용도 | 비고 |
-|:---|:---|:---|
-| `VOYAGE_API_KEY` | Voyage 임베딩 API | yaml에서 `${VOYAGE_API_KEY}`로 참조 |
-| `OPENAI_API_KEY` | OpenAI 임베딩 API | yaml에서 `${OPENAI_API_KEY}`로 참조 |
-| `MISTRAL_API_KEY` | Mistral 임베딩 API | yaml에서 `${MISTRAL_API_KEY}`로 참조 |
-| (없음) | 로컬 임베딩 | provider가 local이면 API 키 불필요 |
+글로벌 설정에서 `${ENV_VAR}` 형식으로 환경변수를 참조할 수 있다.
 
-> yaml에 API 키를 직접 입력할 수도 있지만, 환경변수 참조를 권장합니다. `.deview.yaml`을 git에 커밋할 경우 키 노출 방지.
+```yaml
+# ~/.deview/config.yaml
+embedding:
+  providers:
+    voyage:
+      api_key: "${VOYAGE_API_KEY}"    # 환경변수에서 읽음
+```
 
-### 3.3. 설정 우선순위
+### 3.4. 설정 우선순위
 
-환경변수 > `.deview.yaml` > 기본값
+프로젝트 `.deview.yaml` > 글로벌 `~/.deview/config.yaml` > 기본값
 
 ---
 

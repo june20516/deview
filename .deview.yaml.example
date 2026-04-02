@@ -1,29 +1,11 @@
-# Deview 프로젝트 설정 (선택사항)
+# 프로젝트별 설정 (선택사항)
 # 이 파일이 없어도 기본값으로 동작합니다.
-# 프로젝트 루트에 .deview.yaml 으로 복사하여 사용하세요.
+# 사용할 프로젝트 루트에 .deview.yaml 으로 복사하여 사용하세요.
+#
+# 임베딩 provider, API 키 등 서버 설정은 ~/.deview/config.yaml 에서 관리합니다.
 
 # Scope: 생략 시 git remote URL에서 자동 추론
 # scope: "team/my-project"
-
-# 임베딩 설정
-embedding:
-  # 사용할 provider (voyage | openai | mistral | local)
-  provider: "voyage"
-
-  # Provider별 설정 (여러 개 등록 가능, provider 값만 바꿔서 전환)
-  providers:
-    voyage:
-      model: "voyage-3.5-lite"
-      api_key: "${VOYAGE_API_KEY}"
-    openai:
-      model: "text-embedding-3-small"
-      api_key: "${OPENAI_API_KEY}"
-    mistral:
-      model: "mistral-embed"
-      api_key: "${MISTRAL_API_KEY}"
-    local:
-      model: "BAAI/bge-large-en-v1.5"
-      # API 키 불필요
 
 # 인덱싱 설정
 ingestion:

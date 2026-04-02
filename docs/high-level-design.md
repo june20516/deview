@@ -59,7 +59,25 @@ Deview는 LLM을 직접 호출하지 않습니다. 맥락의 **저장과 검색*
 - 특정 LLM 클라이언트에 종속되지 않는 **독립적(standalone) 서비스**입니다.
 - **확정된 데이터만 수집:** 공용 브랜치에 머지된 커밋, 완료된 이슈, 발행된 문서 등 확정된 맥락만 저장합니다. 작업 중 개인 맥락은 LLM 클라이언트 자체 컨텍스트의 책임입니다.
 
-### 4.1. 인터페이스 레이어 (Interface Layer)
+### 4.1. 설정 구조
+
+설정은 두 레벨로 분리된다:
+
+```
+~/.deview/
+├── config.yaml              # 글로벌: 임베딩 provider, API 키 등 서버 설정
+└── data/
+    └── chroma/              # ChromaDB 영속 저장소
+
+프로젝트/
+└── .deview.yaml             # 프로젝트별: scope, 인덱싱 브랜치 (git 커밋 가능)
+```
+
+- **글로벌 설정**은 Deview 서버 자체의 동작을 결정 (어떤 임베딩을 쓸지, API 키 등)
+- **프로젝트 설정**은 해당 프로젝트의 인덱싱 방식을 결정 (scope, 브랜치 등)
+- 프로젝트 설정이 글로벌과 겹치면 프로젝트 설정이 우선
+
+### 4.2. 인터페이스 레이어 (Interface Layer)
 ```
 Deview (standalone 서버)
   ├── MCP 인터페이스 (기본)  → Claude Code, Cursor 등 LLM 클라이언트
@@ -69,7 +87,7 @@ Deview (standalone 서버)
   └── CLI                  → 관리/디버깅용
 ```
 
-### 4.2. Ingestion Layer (데이터 수집)
+### 4.3. Ingestion Layer (데이터 수집)
 - **수집 조건:** 공용 브랜치에 머지된 커밋만 자동 수집. 외부 소스(Jira/Confluence)는 확정 상태(Done, Published)의 데이터만 수집.
 - **Sources:** Git Logs (커밋 메시지 + diff + 주석 변경분), Markdown Documents, Manual Notes (Phase 1) / Confluence, Jira (Phase 2).
 - **Chunking 단위:**
@@ -88,7 +106,7 @@ Deview (standalone 서버)
     2. 해당 데이터에 `--scope` 태그 및 `file_paths` 메타데이터 부착.
     3. 임베딩 모델을 통해 벡터화.
 
-### 4.3. Storage Layer (벡터 데이터베이스)
+### 4.4. Storage Layer (벡터 데이터베이스)
 - **Engine:** ChromaDB (Phase 1, Local) → Qdrant (팀 배포 시)
 - **Structure:** 단일 컬렉션 내에서 메타데이터 필터링을 통한 논리적 분리.
 - **Schema:**
@@ -97,7 +115,7 @@ Deview (standalone 서버)
     - `content`: 원본 텍스트
     - `metadata`: `{ "scope": "project_a", "source": "git", "author": "kim", "file_paths": ["src/pages/Product/Button.tsx"], "jira_key": "PROJ-456", "timestamp": "2024-05-20" }`
 
-### 4.4. Retrieval Layer (검색)
+### 4.5. Retrieval Layer (검색)
 - **Search:** 사용자의 질문을 벡터화 후, 지정된 `scope` 내에서 유사도 검색(Cosine Similarity) 수행.
 - **Response:** 검색된 상위 K개의 맥락을 클라이언트에 반환.
 - 답변 생성(Generation)은 클라이언트의 LLM이 담당합니다.

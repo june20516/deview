@@ -1,0 +1,24 @@
+# Deview 글로벌 설정
+# ~/.deview/config.yaml 에 복사하여 사용하세요.
+#
+# 임베딩 provider와 API 키 등 서버 레벨 설정을 관리합니다.
+# 프로젝트별 설정(scope, 브랜치 등)은 각 프로젝트의 .deview.yaml 에서 관리합니다.
+
+embedding:
+  # 사용할 provider (voyage | openai | mistral | local)
+  provider: "voyage"
+
+  # Provider별 설정
+  providers:
+    voyage:
+      model: "voyage-3.5-lite"
+      api_key: "여기에-voyage-api-키"
+    # openai:
+    #   model: "text-embedding-3-small"
+    #   api_key: "여기에-openai-api-키"
+    # mistral:
+    #   model: "mistral-embed"
+    #   api_key: "여기에-mistral-api-키"
+    # local:
+    #   model: "BAAI/bge-large-en-v1.5"
+    #   # API 키 불필요. uv sync --extra local 로 설치 필요.
