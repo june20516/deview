@@ -172,8 +172,8 @@ Deview (standalone 서버)
 
 ## 8. 로드맵 (Roadmap)
 - **Phase 1 (mcp-ingest-query):** MCP 서버 기반의 기본 Ingest & Query 기능 구현 (ChromaDB + Voyage/BGE Embedding). Scope 자동 추론 (git remote URL/디렉토리명 기반). 임베딩 모델 교체 가능한 추상화 구조. 로컬 임베딩 모델 설치 가이드 포함.
-- **Phase 2 (git-hook-rest-api):** Git Hook 연동 (공용 브랜치 머지 시 자동 인덱싱) + MCP 원격 전송(SSE/Streamable HTTP) + REST API(보조) + Jira/Confluence 커넥터 (CLI 수동 동기화).
-- **Phase 3 (team-deploy):** 팀 배포 지원 (Qdrant 전환, 인증/권한) + PR 머지 Webhook 기반 자동 인덱싱. (Jira/Confluence 자동 동기화는 추후 확장)
+- **Phase 2 (incremental-connectors):** 증분 인덱싱 + Jira/Confluence 커넥터 (CLI 수동 동기화) + Git Hook 자동 인덱싱 + CLI 도구.
+- **Phase 3 (team-deploy):** MCP 원격 전송(SSE/Streamable HTTP) + REST API(보조) + 팀 배포 지원 (Qdrant 전환, 인증/권한) + PR 머지 Webhook 기반 자동 인덱싱.
 - **Phase 4 (review-automation):** 리뷰 자동화 등 팀 협업 기능.
 - **Phase 5 (ide-extension):** IDE 익스텐션 개발 및 UI 통합 (VS Code 먼저, JetBrains 이후).
 - **Phase 6 (semantic-caching):** 시맨틱 캐싱 도입을 통한 API 호출 최적화.
