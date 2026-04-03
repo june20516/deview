@@ -100,7 +100,31 @@ def test_missing_both_returns_defaults(tmp_path: Path):
 
 
 def test_load_integrations_from_global(tmp_path: Path):
-    """글로벌 설정에서 integrations를 로드한다."""
+    """글로벌 설정에서 atlassian 통합 integrations를 로드한다."""
+    global_yaml = tmp_path / "global.yaml"
+    global_yaml.write_text(
+        "integrations:\n"
+        "  atlassian:\n"
+        "    url: 'https://team.atlassian.net'\n"
+        "    email: 'user@team.com'\n"
+        "    api_token: 'atlas-token-123'\n"
+    )
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+
+    config = load_config(project_dir, global_config_path=global_yaml)
+    assert config.integrations.atlassian.url == "https://team.atlassian.net"
+    assert config.integrations.atlassian.email == "user@team.com"
+    assert config.integrations.atlassian.api_token == "atlas-token-123"
+    # 편의 프로퍼티
+    assert config.integrations.jira_url == "https://team.atlassian.net"
+    assert config.integrations.confluence_url == "https://team.atlassian.net/wiki"
+    assert config.integrations.email == "user@team.com"
+    assert config.integrations.api_token == "atlas-token-123"
+
+
+def test_load_integrations_legacy_format(tmp_path: Path):
+    """레거시 jira/confluence 개별 설정에서도 AtlassianConfig로 변환된다."""
     global_yaml = tmp_path / "global.yaml"
     global_yaml.write_text(
         "integrations:\n"
@@ -117,11 +141,10 @@ def test_load_integrations_from_global(tmp_path: Path):
     project_dir.mkdir()
 
     config = load_config(project_dir, global_config_path=global_yaml)
-    assert config.integrations.jira.url == "https://team.atlassian.net"
-    assert config.integrations.jira.email == "user@team.com"
-    assert config.integrations.jira.api_token == "jira-token-123"
-    assert config.integrations.confluence.url == "https://team.atlassian.net/wiki"
-    assert config.integrations.confluence.api_token == "conf-token-456"
+    # 레거시: jira 블록의 값으로 AtlassianConfig가 채워짐
+    assert config.integrations.atlassian.url == "https://team.atlassian.net"
+    assert config.integrations.atlassian.email == "user@team.com"
+    assert config.integrations.atlassian.api_token == "jira-token-123"
 
 
 def test_load_integrations_empty(tmp_path: Path):
@@ -130,5 +153,6 @@ def test_load_integrations_empty(tmp_path: Path):
     project_dir.mkdir()
 
     config = load_config(project_dir, global_config_path=tmp_path / "nonexistent.yaml")
-    assert config.integrations.jira.url == ""
-    assert config.integrations.confluence.url == ""
+    assert config.integrations.atlassian.url == ""
+    assert config.integrations.jira_url == ""
+    assert config.integrations.confluence_url == ""

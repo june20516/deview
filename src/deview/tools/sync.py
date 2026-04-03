@@ -29,25 +29,25 @@ async def handle_sync(
     scope: str,
     store: ChromaStore,
     embedding: EmbeddingProvider,
-    jira_url: str = "",
-    jira_email: str = "",
-    jira_token: str = "",
+    atlassian_url: str = "",
+    atlassian_email: str = "",
+    atlassian_token: str = "",
     jira_project: str = "",
-    confluence_url: str = "",
-    confluence_email: str = "",
-    confluence_token: str = "",
     confluence_space: str = "",
 ) -> dict:
     """외부 소스를 동기화한다."""
     if source == "jira":
         return await _sync_jira(
             scope=scope, store=store, embedding=embedding,
-            url=jira_url, email=jira_email, token=jira_token, project=jira_project,
+            url=atlassian_url, email=atlassian_email, token=atlassian_token,
+            project=jira_project,
         )
     elif source == "confluence":
+        confluence_url = atlassian_url.rstrip("/") + "/wiki" if atlassian_url else ""
         return await _sync_confluence(
             scope=scope, store=store, embedding=embedding,
-            url=confluence_url, email=confluence_email, token=confluence_token, space=confluence_space,
+            url=confluence_url, email=atlassian_email, token=atlassian_token,
+            space=confluence_space,
         )
     else:
         raise ValueError(f"지원하지 않는 소스: {source}")

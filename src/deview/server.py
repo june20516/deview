@@ -146,22 +146,17 @@ async def deview_sync(
     source='confluence'이면 space 파라미터(Confluence 스페이스 키)가 필요합니다."""
     store, embedding, default_scope, _, _, config = _ensure_initialized()
     resolved_scope = scope or default_scope
-
-    jira_cfg = config.integrations.jira
-    conf_cfg = config.integrations.confluence
+    integ = config.integrations
 
     return await handle_sync(
         source=source,
         scope=resolved_scope,
         store=store,
         embedding=embedding,
-        jira_url=jira_cfg.url,
-        jira_email=jira_cfg.email,
-        jira_token=jira_cfg.api_token,
+        atlassian_url=integ.jira_url,
+        atlassian_email=integ.email,
+        atlassian_token=integ.api_token,
         jira_project=project,
-        confluence_url=conf_cfg.url,
-        confluence_email=conf_cfg.email,
-        confluence_token=conf_cfg.api_token,
         confluence_space=space,
     )
 

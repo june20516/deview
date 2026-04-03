@@ -102,21 +102,17 @@ def sync(
     from deview.tools.sync import handle_sync
 
     store, embedding, default_scope, config = _get_components()
-    jira_cfg = config.integrations.jira
-    conf_cfg = config.integrations.confluence
+    integ = config.integrations
 
     result = asyncio.run(handle_sync(
         source=source,
         scope=scope or default_scope,
         store=store,
         embedding=embedding,
-        jira_url=jira_cfg.url,
-        jira_email=jira_cfg.email,
-        jira_token=jira_cfg.api_token,
+        atlassian_url=integ.jira_url,
+        atlassian_email=integ.email,
+        atlassian_token=integ.api_token,
         jira_project=project,
-        confluence_url=conf_cfg.url,
-        confluence_email=conf_cfg.email,
-        confluence_token=conf_cfg.api_token,
         confluence_space=space,
     ))
     typer.echo(f"동기화 완료: {result['chunks_indexed']}개 청크 ({result['source']})")

@@ -48,9 +48,9 @@ async def test_sync_jira(store: ChromaStore, embedding: FakeEmbedding):
             scope="team/proj",
             store=store,
             embedding=embedding,
-            jira_url="https://team.atlassian.net",
-            jira_email="user@team.com",
-            jira_token="token",
+            atlassian_url="https://team.atlassian.net",
+            atlassian_email="user@team.com",
+            atlassian_token="token",
             jira_project="PROJ",
         )
 
@@ -77,9 +77,9 @@ async def test_sync_confluence(store: ChromaStore, embedding: FakeEmbedding):
             scope="team/proj",
             store=store,
             embedding=embedding,
-            confluence_url="https://team.atlassian.net/wiki",
-            confluence_email="user@team.com",
-            confluence_token="token",
+            atlassian_url="https://team.atlassian.net",
+            atlassian_email="user@team.com",
+            atlassian_token="token",
             confluence_space="DEV",
         )
 
@@ -106,9 +106,9 @@ async def test_sync_jira_incremental(store: ChromaStore, embedding: FakeEmbeddin
             scope="team/proj",
             store=store,
             embedding=embedding,
-            jira_url="https://team.atlassian.net",
-            jira_email="user@team.com",
-            jira_token="token",
+            atlassian_url="https://team.atlassian.net",
+            atlassian_email="user@team.com",
+            atlassian_token="token",
             jira_project="PROJ",
         )
 

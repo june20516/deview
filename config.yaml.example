@@ -25,11 +25,7 @@ embedding:
 
 # 외부 서비스 연동 (Phase 2)
 # integrations:
-#   jira:
+#   atlassian:
 #     url: "https://team.atlassian.net"
 #     email: "user@team.com"
-#     api_token: "${JIRA_API_TOKEN}"
-#   confluence:
-#     url: "https://team.atlassian.net/wiki"
-#     email: "user@team.com"
-#     api_token: "${CONFLUENCE_API_TOKEN}"
+#     api_token: "${ATLASSIAN_API_TOKEN}"

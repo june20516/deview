@@ -34,14 +34,7 @@ class IngestionConfig:
 
 
 @dataclass
-class JiraConfig:
-    url: str = ""
-    email: str = ""
-    api_token: str = ""
-
-
-@dataclass
-class ConfluenceConfig:
+class AtlassianConfig:
     url: str = ""
     email: str = ""
     api_token: str = ""
@@ -49,8 +42,25 @@ class ConfluenceConfig:
 
 @dataclass
 class IntegrationsConfig:
-    jira: JiraConfig = field(default_factory=JiraConfig)
-    confluence: ConfluenceConfig = field(default_factory=ConfluenceConfig)
+    atlassian: AtlassianConfig = field(default_factory=AtlassianConfig)
+
+    @property
+    def jira_url(self) -> str:
+        return self.atlassian.url
+
+    @property
+    def confluence_url(self) -> str:
+        if not self.atlassian.url:
+            return ""
+        return self.atlassian.url.rstrip("/") + "/wiki"
+
+    @property
+    def email(self) -> str:
+        return self.atlassian.email
+
+    @property
+    def api_token(self) -> str:
+        return self.atlassian.api_token
 
 
 @dataclass
@@ -97,6 +107,31 @@ def _load_yaml(path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
+def _parse_atlassian(integrations_raw: dict) -> AtlassianConfig:
+    """integrations 블록에서 AtlassianConfig를 파싱한다.
+
+    신규 포맷(atlassian 블록) 우선, 레거시 포맷(jira/confluence 개별) 하위호환.
+    """
+    atlassian_raw = integrations_raw.get("atlassian", {})
+    if atlassian_raw:
+        return AtlassianConfig(
+            url=atlassian_raw.get("url", ""),
+            email=atlassian_raw.get("email", ""),
+            api_token=_substitute_env_vars(atlassian_raw.get("api_token", "")),
+        )
+
+    # 레거시: jira/confluence 개별 설정에서 변환
+    jira_raw = integrations_raw.get("jira", {})
+    if jira_raw:
+        return AtlassianConfig(
+            url=jira_raw.get("url", ""),
+            email=jira_raw.get("email", ""),
+            api_token=_substitute_env_vars(jira_raw.get("api_token", "")),
+        )
+
+    return AtlassianConfig()
+
+
 def load_config(
     project_path: Path,
     global_config_path: Path | None = None,
@@ -133,22 +168,10 @@ def load_config(
         ),
     )
 
-    # 인테그레이션: 글로벌 설정만
+    # 인테그레이션: 글로벌 설정만 (신규 atlassian 포맷 우선, 레거시 jira/confluence 하위호환)
     integrations_raw = global_raw.get("integrations", {})
-    jira_raw = integrations_raw.get("jira", {})
-    confluence_raw = integrations_raw.get("confluence", {})
-
     integrations = IntegrationsConfig(
-        jira=JiraConfig(
-            url=jira_raw.get("url", ""),
-            email=jira_raw.get("email", ""),
-            api_token=_substitute_env_vars(jira_raw.get("api_token", "")),
-        ),
-        confluence=ConfluenceConfig(
-            url=confluence_raw.get("url", ""),
-            email=confluence_raw.get("email", ""),
-            api_token=_substitute_env_vars(confluence_raw.get("api_token", "")),
-        ),
+        atlassian=_parse_atlassian(integrations_raw),
     )
 
     return DeviewConfig(
