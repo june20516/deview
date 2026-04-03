@@ -22,3 +22,14 @@ embedding:
     # local:
     #   model: "BAAI/bge-large-en-v1.5"
     #   # API 키 불필요. uv sync --extra local 로 설치 필요.
+
+# 외부 서비스 연동 (Phase 2)
+# integrations:
+#   jira:
+#     url: "https://team.atlassian.net"
+#     email: "user@team.com"
+#     api_token: "${JIRA_API_TOKEN}"
+#   confluence:
+#     url: "https://team.atlassian.net/wiki"
+#     email: "user@team.com"
+#     api_token: "${CONFLUENCE_API_TOKEN}"

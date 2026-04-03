@@ -101,9 +101,11 @@ async def deview_ingest(
     scope: str = "",
     source_type: str = "auto",
     max_commits: int | None = None,
+    incremental: bool = True,
 ) -> dict:
     """프로젝트의 Git 히스토리 또는 Markdown 문서를 인덱싱합니다.
-    최초 사용 시 또는 새로운 데이터를 수동으로 추가할 때 호출하세요."""
+    최초 사용 시 또는 새로운 데이터를 수동으로 추가할 때 호출하세요.
+    incremental=True(기본)이면 마지막 인덱싱 이후 새 데이터만 추가합니다."""
     store, embedding, default_scope, _, branch, _ = _ensure_initialized()
     resolved_path = os.environ.get("DEVIEW_PROJECT_PATH", str(Path.cwd()))
     return await handle_ingest(
@@ -114,6 +116,7 @@ async def deview_ingest(
         store=store,
         embedding=embedding,
         branch=branch,
+        incremental=incremental,
     )
 
 
