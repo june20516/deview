@@ -104,3 +104,51 @@ async def test_full_flow(test_repo: Path, store: ChromaStore, embedding: FakeEmb
     )
     assert status_result["total_chunks"] >= 2
     assert status_result["scope"] == "team/test-project"
+
+
+@pytest.mark.asyncio
+async def test_incremental_ingest_only_adds_new_commits(tmp_path: Path):
+    """증분 인덱싱이 기존 커밋을 건너뛰고 새 커밋만 추가하는지 검증한다."""
+    store = ChromaStore(persist_dir=str(tmp_path / "chroma"))
+    embedding = FakeEmbedding()
+
+    repo_path = tmp_path / "repo"
+    repo_path.mkdir()
+    repo = gitmodule.Repo.init(repo_path)
+    repo.config_writer().set_value("user", "name", "Test").release()
+    repo.config_writer().set_value("user", "email", "t@t.com").release()
+
+    (repo_path / "a.py").write_text("x = 1\n")
+    repo.index.add(["a.py"])
+    repo.index.commit("commit 1")
+
+    (repo_path / "b.py").write_text("y = 2\n")
+    repo.index.add(["b.py"])
+    repo.index.commit("commit 2")
+
+    # 전체 인덱싱
+    result1 = await handle_ingest(
+        path=str(repo_path), scope="test/e2e", source_type="git",
+        store=store, embedding=embedding, branch="master",
+    )
+    total_first = result1["chunks_indexed"]
+
+    # 커밋 1개 추가
+    (repo_path / "c.py").write_text("z = 3\n")
+    repo.index.add(["c.py"])
+    repo.index.commit("commit 3")
+
+    # 증분 인덱싱
+    result2 = await handle_ingest(
+        path=str(repo_path), scope="test/e2e", source_type="git",
+        store=store, embedding=embedding, branch="master",
+        incremental=True,
+    )
+    incremental_count = result2["chunks_indexed"]
+
+    assert incremental_count >= 1
+    assert incremental_count < total_first
+
+    # 전체 데이터 확인
+    status = await handle_status(scope="test/e2e", store=store)
+    assert status["total_chunks"] == total_first + incremental_count
