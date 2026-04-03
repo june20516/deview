@@ -212,3 +212,41 @@ async def test_search_file_paths_json_format(store: ChromaStore, embedding: Fake
     )
     assert len(result["results"]) == 1
     assert result["results"][0]["file_paths"] == ["src/a.py", "src/b.py"]
+
+
+@pytest.mark.asyncio
+async def test_ingest_git_incremental(store: ChromaStore, embedding: FakeEmbedding, tmp_path: Path):
+    """증분 인덱싱: 이미 인덱싱된 커밋 이후의 새 커밋만 인덱싱한다."""
+    import git as gitmodule
+    repo_path = tmp_path / "incr_repo"
+    repo_path.mkdir()
+    repo = gitmodule.Repo.init(repo_path)
+    repo.config_writer().set_value("user", "name", "Test").release()
+    repo.config_writer().set_value("user", "email", "t@t.com").release()
+
+    # 첫 번째 커밋
+    (repo_path / "a.py").write_text("x = 1\n")
+    repo.index.add(["a.py"])
+    repo.index.commit("first commit")
+
+    # 전체 인덱싱
+    result1 = await handle_ingest(
+        path=str(repo_path), scope="test/incr", source_type="git",
+        store=store, embedding=embedding, branch="master",
+    )
+    first_count = result1["chunks_indexed"]
+    assert first_count >= 1
+
+    # 두 번째 커밋 추가
+    (repo_path / "b.py").write_text("y = 2\n")
+    repo.index.add(["b.py"])
+    repo.index.commit("second commit")
+
+    # 증분 인덱싱
+    result2 = await handle_ingest(
+        path=str(repo_path), scope="test/incr", source_type="git",
+        store=store, embedding=embedding, branch="master",
+        incremental=True,
+    )
+    assert result2["chunks_indexed"] >= 1
+    assert result2["chunks_indexed"] < first_count + 1

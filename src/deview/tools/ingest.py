@@ -18,6 +18,7 @@ async def handle_ingest(
     store: ChromaStore | None = None,
     embedding: EmbeddingProvider | None = None,
     branch: str = "main",
+    incremental: bool = False,
 ) -> dict:
     """Git 히스토리 또는 Markdown 문서를 인덱싱한다."""
     if store is None:
@@ -34,9 +35,14 @@ async def handle_ingest(
         else:
             resolved_type = "markdown"
 
+    since_commit: str | None = None
+    if incremental and resolved_type == "git":
+        since_commit = store.get_latest_commit_hash(scope)
+
     if resolved_type == "git":
         chunks = parse_git_history(
-            target, branch=branch, scope=scope, max_commits=max_commits
+            target, branch=branch, scope=scope,
+            max_commits=max_commits, since_commit=since_commit,
         )
     elif resolved_type == "markdown":
         chunks = parse_markdown_files(target, scope=scope)

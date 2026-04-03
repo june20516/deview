@@ -54,6 +54,7 @@ def parse_git_history(
     branch: str = "main",
     scope: str = "",
     max_commits: int | None = None,
+    since_commit: str | None = None,
 ) -> list[Chunk]:
     """git 히스토리를 파싱하여 청크 리스트를 반환한다."""
     repo = git.Repo(repo_path)
@@ -71,6 +72,16 @@ def parse_git_history(
     if max_commits is not None:
         iter_kwargs["max_count"] = max_commits
     commits = list(repo.iter_commits(**iter_kwargs))
+
+    # since_commit이 지정되면 해당 커밋까지 잘라낸다
+    if since_commit:
+        filtered = []
+        for commit in commits:
+            if commit.hexsha.startswith(since_commit):
+                break
+            filtered.append(commit)
+        commits = filtered
+        logger.info("증분 인덱싱: %s 이후 %d개 커밋 발견", since_commit, len(commits))
 
     for commit in commits:
         author = commit.author.name or "unknown"
