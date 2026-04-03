@@ -10,7 +10,11 @@ dependencies = [
     "openai",
     "gitpython",
     "pyyaml",
+    "typer",
 ]
+
+[project.scripts]
+deview = "deview.cli:app"
 
 [project.optional-dependencies]
 local = [
