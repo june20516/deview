@@ -34,10 +34,31 @@ class IngestionConfig:
 
 
 @dataclass
+class JiraConfig:
+    url: str = ""
+    email: str = ""
+    api_token: str = ""
+
+
+@dataclass
+class ConfluenceConfig:
+    url: str = ""
+    email: str = ""
+    api_token: str = ""
+
+
+@dataclass
+class IntegrationsConfig:
+    jira: JiraConfig = field(default_factory=JiraConfig)
+    confluence: ConfluenceConfig = field(default_factory=ConfluenceConfig)
+
+
+@dataclass
 class DeviewConfig:
     scope: str | None = None
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     ingestion: IngestionConfig = field(default_factory=IngestionConfig)
+    integrations: IntegrationsConfig = field(default_factory=IntegrationsConfig)
 
 
 _ENV_VAR_PATTERN = re.compile(r"\$\{(\w+)\}")
@@ -112,8 +133,27 @@ def load_config(
         ),
     )
 
+    # 인테그레이션: 글로벌 설정만
+    integrations_raw = global_raw.get("integrations", {})
+    jira_raw = integrations_raw.get("jira", {})
+    confluence_raw = integrations_raw.get("confluence", {})
+
+    integrations = IntegrationsConfig(
+        jira=JiraConfig(
+            url=jira_raw.get("url", ""),
+            email=jira_raw.get("email", ""),
+            api_token=_substitute_env_vars(jira_raw.get("api_token", "")),
+        ),
+        confluence=ConfluenceConfig(
+            url=confluence_raw.get("url", ""),
+            email=confluence_raw.get("email", ""),
+            api_token=_substitute_env_vars(confluence_raw.get("api_token", "")),
+        ),
+    )
+
     return DeviewConfig(
         scope=project_raw.get("scope"),
         embedding=embedding,
         ingestion=ingestion,
+        integrations=integrations,
     )

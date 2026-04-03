@@ -97,3 +97,38 @@ def test_missing_both_returns_defaults(tmp_path: Path):
     config = load_config(tmp_path, global_config_path=tmp_path / "nonexistent.yaml")
     assert config.scope is None
     assert config.embedding.provider == "voyage"
+
+
+def test_load_integrations_from_global(tmp_path: Path):
+    """글로벌 설정에서 integrations를 로드한다."""
+    global_yaml = tmp_path / "global.yaml"
+    global_yaml.write_text(
+        "integrations:\n"
+        "  jira:\n"
+        "    url: 'https://team.atlassian.net'\n"
+        "    email: 'user@team.com'\n"
+        "    api_token: 'jira-token-123'\n"
+        "  confluence:\n"
+        "    url: 'https://team.atlassian.net/wiki'\n"
+        "    email: 'user@team.com'\n"
+        "    api_token: 'conf-token-456'\n"
+    )
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+
+    config = load_config(project_dir, global_config_path=global_yaml)
+    assert config.integrations.jira.url == "https://team.atlassian.net"
+    assert config.integrations.jira.email == "user@team.com"
+    assert config.integrations.jira.api_token == "jira-token-123"
+    assert config.integrations.confluence.url == "https://team.atlassian.net/wiki"
+    assert config.integrations.confluence.api_token == "conf-token-456"
+
+
+def test_load_integrations_empty(tmp_path: Path):
+    """integrations가 없으면 기본값(빈 설정)을 사용한다."""
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+
+    config = load_config(project_dir, global_config_path=tmp_path / "nonexistent.yaml")
+    assert config.integrations.jira.url == ""
+    assert config.integrations.confluence.url == ""
