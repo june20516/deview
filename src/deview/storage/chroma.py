@@ -103,6 +103,45 @@ class ChromaStore:
                 counts[source] = count
         return counts
 
+    def get_latest_commit_hash(self, scope: str) -> str | None:
+        """scope의 git 소스 중 가장 최근 commit_hash를 반환한다."""
+        try:
+            result = self._collection.get(
+                where={"$and": [{"scope": scope}, {"source": "git"}]}
+            )
+            if not result["metadatas"]:
+                return None
+            entries = [
+                (m.get("timestamp", ""), m.get("commit_hash", ""))
+                for m in result["metadatas"]
+                if m.get("commit_hash")
+            ]
+            if not entries:
+                return None
+            entries.sort(key=lambda x: x[0], reverse=True)
+            return entries[0][1]
+        except Exception:
+            logger.exception("최신 commit_hash 조회 중 오류")
+            return None
+
+    def get_latest_timestamp(self, scope: str, source: str) -> str | None:
+        """scope + source 조합의 최신 timestamp를 반환한다."""
+        try:
+            result = self._collection.get(
+                where={"$and": [{"scope": scope}, {"source": source}]}
+            )
+            if not result["metadatas"]:
+                return None
+            timestamps = [
+                m.get("timestamp", "")
+                for m in result["metadatas"]
+                if m.get("timestamp")
+            ]
+            return max(timestamps) if timestamps else None
+        except Exception:
+            logger.exception("최신 timestamp 조회 중 오류: source=%s", source)
+            return None
+
     def get_last_indexed(self, scope: str) -> str | None:
         """scope의 마지막 인덱싱 시각을 반환한다."""
         try:

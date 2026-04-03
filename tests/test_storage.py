@@ -80,3 +80,41 @@ def test_count_by_scope(store: ChromaStore):
 
     counts = store.count_by_source(scope="proj")
     assert counts == {"git": 1, "markdown": 1, "manual": 1}
+
+
+def test_get_latest_commit_hash(store: ChromaStore):
+    """scope의 git 소스 중 가장 최근 commit_hash를 반환한다."""
+    store.add(
+        ids=["g1", "g2"],
+        embeddings=[[0.1, 0.2, 0.3]] * 2,
+        contents=["first commit", "second commit"],
+        metadatas=[
+            {"scope": "proj", "source": "git", "commit_hash": "aaa1111", "timestamp": "2025-01-01"},
+            {"scope": "proj", "source": "git", "commit_hash": "bbb2222", "timestamp": "2025-06-15"},
+        ],
+    )
+    assert store.get_latest_commit_hash("proj") == "bbb2222"
+
+
+def test_get_latest_commit_hash_empty(store: ChromaStore):
+    """데이터가 없으면 None을 반환한다."""
+    assert store.get_latest_commit_hash("nonexistent") is None
+
+
+def test_get_latest_timestamp(store: ChromaStore):
+    """scope + source 조합의 최신 timestamp를 반환한다."""
+    store.add(
+        ids=["j1", "j2"],
+        embeddings=[[0.1, 0.2, 0.3]] * 2,
+        contents=["issue 1", "issue 2"],
+        metadatas=[
+            {"scope": "proj", "source": "jira", "timestamp": "2025-03-01"},
+            {"scope": "proj", "source": "jira", "timestamp": "2025-09-20"},
+        ],
+    )
+    assert store.get_latest_timestamp("proj", "jira") == "2025-09-20"
+
+
+def test_get_latest_timestamp_empty(store: ChromaStore):
+    """데이터가 없으면 None을 반환한다."""
+    assert store.get_latest_timestamp("proj", "jira") is None
