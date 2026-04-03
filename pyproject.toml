@@ -20,6 +20,9 @@ local = [
 mistral = [
     "mistralai",
 ]
+connectors = [
+    "atlassian-python-api",
+]
 
 [dependency-groups]
 dev = [
