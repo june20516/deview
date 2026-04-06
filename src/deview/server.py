@@ -140,10 +140,12 @@ async def deview_sync(
     scope: str = "",
     project: str = "",
     space: str = "",
+    page_ids: list[str] | None = None,
 ) -> dict:
     """외부 소스(Jira, Confluence)의 데이터를 동기화합니다.
     source='jira'이면 project 파라미터(Jira 프로젝트 키)가 필요하고,
-    source='confluence'이면 space 파라미터(Confluence 스페이스 키)가 필요합니다."""
+    source='confluence'이면 space 파라미터(Confluence 스페이스 키) 또는
+    page_ids(특정 페이지 ID 목록)가 필요합니다."""
     store, embedding, default_scope, _, _, config = _ensure_initialized()
     resolved_scope = scope or default_scope
     integ = config.integrations
@@ -158,6 +160,7 @@ async def deview_sync(
         atlassian_token=integ.api_token,
         jira_project=project,
         confluence_space=space,
+        confluence_page_ids=page_ids,
     )
 
 

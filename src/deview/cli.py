@@ -96,6 +96,7 @@ def sync(
     source: str = typer.Argument(..., help="동기화 소스 (jira | confluence)"),
     project: str = typer.Option("", help="Jira 프로젝트 키"),
     space: str = typer.Option("", help="Confluence 스페이스 키"),
+    page_ids: list[str] = typer.Option([], "--page-id", help="Confluence 페이지 ID (여러 개 가능)"),
     scope: str = typer.Option("", help="scope"),
 ):
     """외부 소스(Jira, Confluence)를 동기화한다."""
@@ -114,6 +115,7 @@ def sync(
         atlassian_token=integ.api_token,
         jira_project=project,
         confluence_space=space,
+        confluence_page_ids=page_ids or None,
     ))
     typer.echo(f"동기화 완료: {result['chunks_indexed']}개 청크 ({result['source']})")
 

@@ -34,6 +34,7 @@ async def handle_sync(
     atlassian_token: str = "",
     jira_project: str = "",
     confluence_space: str = "",
+    confluence_page_ids: list[str] | None = None,
 ) -> dict:
     """외부 소스를 동기화한다."""
     if source == "jira":
@@ -47,7 +48,7 @@ async def handle_sync(
         return await _sync_confluence(
             scope=scope, store=store, embedding=embedding,
             url=confluence_url, email=atlassian_email, token=atlassian_token,
-            space=confluence_space,
+            space=confluence_space, page_ids=confluence_page_ids,
         )
     else:
         raise ValueError(f"지원하지 않는 소스: {source}")
@@ -98,20 +99,29 @@ async def _sync_confluence(
     email: str,
     token: str,
     space: str,
+    page_ids: list[str] | None = None,
 ) -> dict:
     """Confluence 페이지를 동기화한다."""
     client = _create_confluence_client(url, email, token)
 
-    pages = client.get_all_pages_from_space(
-        space, start=0, limit=500, expand="body.storage,version",
-    )
-
-    latest = store.get_latest_timestamp(scope, "confluence")
-    if latest:
-        pages = [
-            p for p in pages
-            if p.get("version", {}).get("when", "")[:10] >= latest
-        ]
+    if page_ids:
+        # 특정 페이지만 개별 조회
+        pages = []
+        for pid in page_ids:
+            page = client.get_page_by_id(pid, expand="body.storage,version")
+            if page:
+                pages.append(page)
+    else:
+        # 스페이스 전체 — CQL로 증분 필터링
+        latest = store.get_latest_timestamp(scope, "confluence")
+        if latest:
+            cql = f'space = "{space}" AND type = "page" AND lastModified >= "{latest}"'
+            result = client.cql(cql, limit=500, expand="body.storage,version")
+            pages = result.get("results", [])
+        else:
+            pages = client.get_all_pages_from_space(
+                space, start=0, limit=500, expand="body.storage,version",
+            )
 
     if not pages:
         return {"source": "confluence", "scope": scope, "chunks_indexed": 0}

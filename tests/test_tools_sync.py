@@ -114,3 +114,65 @@ async def test_sync_jira_incremental(store: ChromaStore, embedding: FakeEmbeddin
 
     jql_call = mock_jira.jql.call_args[0][0]
     assert "2025-03-01" in jql_call
+
+
+@pytest.mark.asyncio
+async def test_sync_confluence_by_page_ids(store: ChromaStore, embedding: FakeEmbedding):
+    """특정 페이지 ID로 Confluence 동기화한다."""
+    mock_confluence = MagicMock()
+    mock_confluence.get_page_by_id.side_effect = lambda pid, **kw: {
+        "id": pid,
+        "title": f"페이지 {pid}",
+        "body": {"storage": {"value": f"<p>{pid} 내용</p>"}},
+        "version": {"by": {"displayName": "작성자"}, "when": "2025-11-01T10:00:00.000Z"},
+    }
+
+    with patch("deview.tools.sync._create_confluence_client", return_value=mock_confluence):
+        result = await handle_sync(
+            source="confluence",
+            scope="team/proj",
+            store=store,
+            embedding=embedding,
+            atlassian_url="https://team.atlassian.net",
+            atlassian_email="user@team.com",
+            atlassian_token="token",
+            confluence_page_ids=["111", "222"],
+        )
+
+    assert result["source"] == "confluence"
+    assert result["chunks_indexed"] == 2
+    # get_all_pages_from_space는 호출되지 않아야 함
+    mock_confluence.get_all_pages_from_space.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_sync_confluence_incremental_uses_cql(store: ChromaStore, embedding: FakeEmbedding):
+    """스페이스 증분 동기화 시 CQL을 사용한다."""
+    store.add(
+        ids=["conf-existing"],
+        embeddings=[[0.1, 0.2, 0.3]],
+        contents=["기존 문서"],
+        metadatas=[{"scope": "team/proj", "source": "confluence", "timestamp": "2025-06-01"}],
+    )
+
+    mock_confluence = MagicMock()
+    mock_confluence.cql.return_value = {"results": []}
+
+    with patch("deview.tools.sync._create_confluence_client", return_value=mock_confluence):
+        result = await handle_sync(
+            source="confluence",
+            scope="team/proj",
+            store=store,
+            embedding=embedding,
+            atlassian_url="https://team.atlassian.net",
+            atlassian_email="user@team.com",
+            atlassian_token="token",
+            confluence_space="DEV",
+        )
+
+    # CQL이 호출되고 날짜 필터가 포함되어야 함
+    mock_confluence.cql.assert_called_once()
+    cql_call = mock_confluence.cql.call_args[0][0]
+    assert "2025-06-01" in cql_call
+    # get_all_pages_from_space는 호출되지 않아야 함
+    mock_confluence.get_all_pages_from_space.assert_not_called()
