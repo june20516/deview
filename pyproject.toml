@@ -11,6 +11,7 @@ dependencies = [
     "gitpython",
     "pyyaml",
     "typer",
+    "atlassian-python-api",
 ]
 
 [project.scripts]
@@ -23,9 +24,6 @@ local = [
 ]
 mistral = [
     "mistralai",
-]
-connectors = [
-    "atlassian-python-api",
 ]
 
 [dependency-groups]
