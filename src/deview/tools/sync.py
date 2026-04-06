@@ -142,11 +142,14 @@ async def _sync_confluence(
         return {"source": "confluence", "scope": scope, "chunks_indexed": 0}
 
     ids = []
+    section_counters: dict[str, int] = {}
     for c in chunks:
-        section = c.metadata.get("section", "")
         base_id = c.metadata["document_id"]
+        section = c.metadata.get("section", "")
         if section:
-            ids.append(f"{base_id}-{hash(section) % 100000:05d}")
+            count = section_counters.get(base_id, 0)
+            section_counters[base_id] = count + 1
+            ids.append(f"{base_id}-s{count}")
         else:
             ids.append(base_id)
 
