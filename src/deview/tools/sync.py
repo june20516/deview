@@ -106,22 +106,33 @@ async def _sync_confluence(
 
     if page_ids:
         # 특정 페이지만 개별 조회
+        target_ids = page_ids
+    else:
+        # 스페이스 전체 — CQL로 증분 필터링하여 페이지 ID 목록 수집
+        latest = store.get_latest_timestamp(scope, "confluence")
+        if latest:
+            cql = f'space = "{space}" AND type = "page" AND lastModified >= "{latest}"'
+            result = client.cql(cql, limit=500)
+            target_ids = [
+                r["content"]["id"]
+                for r in result.get("results", [])
+                if r.get("content", {}).get("id")
+            ]
+        else:
+            all_pages = client.get_all_pages_from_space(
+                space, start=0, limit=500, expand="body.storage,version",
+            )
+            target_ids = None  # 전체 조회 결과를 직접 사용
+
+    # 페이지 데이터 수집
+    if target_ids is not None:
         pages = []
-        for pid in page_ids:
+        for pid in target_ids:
             page = client.get_page_by_id(pid, expand="body.storage,version")
             if page:
                 pages.append(page)
     else:
-        # 스페이스 전체 — CQL로 증분 필터링
-        latest = store.get_latest_timestamp(scope, "confluence")
-        if latest:
-            cql = f'space = "{space}" AND type = "page" AND lastModified >= "{latest}"'
-            result = client.cql(cql, limit=500, expand="body.storage,version")
-            pages = result.get("results", [])
-        else:
-            pages = client.get_all_pages_from_space(
-                space, start=0, limit=500, expand="body.storage,version",
-            )
+        pages = all_pages
 
     if not pages:
         return {"source": "confluence", "scope": scope, "chunks_indexed": 0}
