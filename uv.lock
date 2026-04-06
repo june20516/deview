@@ -746,6 +746,7 @@ name = "deview"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "atlassian-python-api" },
     { name = "chromadb" },
     { name = "gitpython" },
     { name = "mcp", extra = ["cli"] },
@@ -756,9 +757,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-connectors = [
-    { name = "atlassian-python-api" },
-]
 local = [
     { name = "sentence-transformers" },
     { name = "torch" },
@@ -775,7 +773,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "atlassian-python-api", marker = "extra == 'connectors'" },
+    { name = "atlassian-python-api" },
     { name = "chromadb" },
     { name = "gitpython" },
     { name = "mcp", extras = ["cli"] },
@@ -787,7 +785,7 @@ requires-dist = [
     { name = "typer" },
     { name = "voyageai" },
 ]
-provides-extras = ["local", "mistral", "connectors"]
+provides-extras = ["local", "mistral"]
 
 [package.metadata.requires-dev]
 dev = [
